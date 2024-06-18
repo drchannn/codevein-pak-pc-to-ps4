@@ -279,6 +279,7 @@ def patch_offsets():
 
 						ff.seek(offset_header+3+len(formato_dds)+17)
 						ff.write(new_value.to_bytes(4, byteorder='little'))
+						ff.write(new_value.to_bytes(4, byteorder='little'))
 
 
 def replace_files():
