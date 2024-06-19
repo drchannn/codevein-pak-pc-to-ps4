@@ -107,9 +107,9 @@ def extract_content_pak(pak_file):
 	shutil.copytree(TMP_PATH+"\\pak\\UmodelSaved", TMP_PATH+"\\pc", dirs_exist_ok=True)
 	shutil.rmtree(TMP_PATH+"\\pak\\UmodelSaved")
 
-	umodel_export_cmd=[umodel_exe,"-game=ue4.18","-path="+TMP_PATH+"\\pak","-notgacomp","-export","*"]
+	umodel_export_cmd=[umodel_exe,"-game="+GAMETAG","-path="+TMP_PATH+"\\pak","-notgacomp","-export","*"]
 	sp = subprocess.run(umodel_export_cmd, capture_output=True, text=True, cwd=TMP_PATH+"\\pak")
-	umodel_export_cmd=[umodel_exe,"-game=ue4.18","-path="+TMP_PATH+"\\pak","-dds","-export","*"]
+	umodel_export_cmd=[umodel_exe,"-game="+GAMETAG","-path="+TMP_PATH+"\\pak","-dds","-export","*"]
 	sp = subprocess.run(umodel_export_cmd, capture_output=True, text=True, cwd=TMP_PATH+"\\pak")
 	shutil.copytree(TMP_PATH+"\\pak\\UmodelExport", TMP_PATH+"\\pc", dirs_exist_ok=True)
 	shutil.rmtree(TMP_PATH+"\\pak")
@@ -120,7 +120,7 @@ def get_files_to_process():
 	aux_listado=[]
 	for directorio_actual, subdirectorios, archivos in os.walk(TMP_PATH+"\\pc"):
 		for k in archivos:
-			if(k[-4:]==".dds"):
+			if(k[-4:]==".tga"):
 				pc_path = directorio_actual
 				ps4_path = directorio_actual[:len(TMP_PATH)]+"\\ps4"+directorio_actual[len(TMP_PATH)+3:]
 				fichero_sin_ext=(("%s\\%s" % (directorio_actual, k))[:-4])[len(directorio_actual)+1:]
@@ -196,6 +196,8 @@ def convert_dds():
 				formato_ps4 = "Bc3UNormSrgb"
 			elif (formato_dds=="BC5"):
 				formato_ps4 = "Bc5UNorm"
+			elif (formato_dds=="BC7"):
+				formato_ps4 = "Bc7UNorm"
 			else:
 				__exit("UNKNOW FORMAT  - "+fichero_actual+".uexp")
 
@@ -278,7 +280,6 @@ def patch_offsets():
 							new_value = int.from_bytes(ff_dds.read(4), byteorder='little')
 
 						ff.seek(offset_header+3+len(formato_dds)+17)
-						ff.write(new_value.to_bytes(4, byteorder='little'))
 						ff.write(new_value.to_bytes(4, byteorder='little'))
 
 
