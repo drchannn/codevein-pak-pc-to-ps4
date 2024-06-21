@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 #
-# Code Vein Mod Converter Tool 1.0 by drchannn
+# PAK PC TO PS4 MOD Converter Tool 1.0.2 by drchannn
 #
 ##############################################
 
