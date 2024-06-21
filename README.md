@@ -1,4 +1,4 @@
-## Code Vein Mod Converter Tool (by drchannn) #
+## PAK PC TO PS4 MOD Converter Tool (by drchannn) #
 
 Simple tool for convert pc pak files to ps4 pak files from game CodeVein
 
