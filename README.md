@@ -22,4 +22,5 @@ Simple tool for convert pc pak files to ps4 pak files from game CodeVein
 - On tools folder, there is a subfolder called profiles. On this there is a text files with a two values for every game, unreal engine version and unreal engine game path. If your game dont appear you can to create for ur game with correct values. (If you do this please send me to put on repo)
 
 ### To-Do: ###
-- Read better uexp, uasset files 
+- Read better uexp, uasset files
+- Testing more games and resources
