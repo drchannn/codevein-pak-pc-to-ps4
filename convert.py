@@ -147,10 +147,11 @@ def extract_content_pak(pak_file):
 	if (os.path.isdir(TMP_PATH+"\\pak\\UmodelSaved")==False): 
 		__save_default_profile(1)
 		__exit("ERROR: ON SAVE FILES FROM PAK")
+		
 	shutil.copytree(TMP_PATH+"\\pak\\UmodelSaved", TMP_PATH+"\\ps4", dirs_exist_ok=True)
 	shutil.copytree(TMP_PATH+"\\pak\\UmodelSaved", TMP_PATH+"\\pc", dirs_exist_ok=True)
 	shutil.rmtree(TMP_PATH+"\\pak\\UmodelSaved")
-
+	
 	umodel_export_cmd=[umodel_exe,"-game="+GAMETAG,"-path="+TMP_PATH+"\\pak","-notgacomp","-export","*"]
 	sp = subprocess.run(umodel_export_cmd, capture_output=True, text=True, cwd=TMP_PATH+"\\pak")
 	if (os.path.isdir(TMP_PATH+"\\pak\\UmodelExport")==False):
@@ -252,46 +253,59 @@ def get_info_uexp(fichero):
 
 
 def convert_dds():
-	__l("CONVERTING DDS FILES")
-	orbisimage_exe = "%s\\tools\\orbis-image2gnf\\orbis-image2gnf.exe" % (APP_PATH)
+    __l("CONVERTING DDS FILES")
+    orbisimage_exe = "%s\\tools\\orbis-image2gnf\\orbis-image2gnf.exe" % (APP_PATH)
 
-	for i, k in enumerate(listado_ficheros):
-		print (f"\t\t\t  {i+1} - {len(listado_ficheros)}", end="\r")
+    for i, k in enumerate(listado_ficheros):
+        print(f"\t\t\t  {i+1} - {len(listado_ficheros)}", end="\r")
 
-		if (listado_ficheros[i]['tga']==1):
-			
-			fichero_actual=listado_ficheros[i]['path_pc']+"\\"+listado_ficheros[i]['fichero']
+        if listado_ficheros[i]['tga'] == 1:
+            fichero_actual = listado_ficheros[i]['path_pc'] + "\\" + listado_ficheros[i]['fichero']
 
-			# alguna vez los ficheros de imagen van en subcarpetas 
-			# cuando esto pasa esos ficheros no se procesan
-			if (os.path.isfile(fichero_actual+".uexp")==False): 
-				input(__l("WARNING: MISSING UEXP FILE ["+listado_ficheros[i]['fichero']+"] - THIS FILE CAN BE CONVERTED - Press a key to continue . . .",1))
-			else:
-				size_header,formato_dds,num_mipmaps,offset_header=get_info_uexp(fichero_actual+".uexp")
-				if (formato_dds=="PF_DXT1"):
-					formato_ps4 = "Bc1UNormSrgb"
-				elif (formato_dds=="PF_DXT5"):
-					formato_ps4 = "Bc3UNormSrgb"
-				elif (formato_dds=="PF_BC5"):
-					formato_ps4 = "Bc5UNorm"
-				elif (formato_dds=="PF_BC7"):
-					formato_ps4 = "Bc7UNorm"
-				elif (formato_dds=="PF_B8G8R8A8"):
-					formato_ps4 = "B8G8R8X8UNormSrgb"
-					input(__l("WARNING: Please send me this file [PF_B8G8R8A8] - Press a key to continue . . .",1))
-					#print (fichero_actual)
-					#print (formato_dds)
-					formato_ps4 = "skip"
-				else:
-					__exit("ERROR: UNKNOW FORMAT ["+formato_dds+"] - "+fichero_actual+".uexp")
-			
-				if (formato_ps4!="skip"):			
-					orbis_cmd=[orbisimage_exe,"-m",str(num_mipmaps),"-f",formato_ps4,"-i",listado_ficheros[i]['path_pc']+"\\"+listado_ficheros[i]['fichero']+".tga","-o",listado_ficheros[i]['path_pc']+"\\"+listado_ficheros[i]['fichero']+".dds_PS4"]
-					sp = subprocess.run(orbis_cmd, capture_output=True, text=True)
-					if (sp.returncode!=0):
-						print (sp.stdout)
-						print (sp.stderr)
-						__exit("ERROR CONVERTING DDS FILES- "+fichero_actual+".uexp")
+            if not os.path.isfile(fichero_actual + ".uexp"):
+                input(__l("WARNING: MISSING UEXP FILE [" + listado_ficheros[i]['fichero'] + "] - THIS FILE CAN BE CONVERTED - Press a key to continue . . .", 1))
+            else:
+                size_header, formato_dds, num_mipmaps, offset_header = get_info_uexp(fichero_actual + ".uexp")
+                if formato_dds == "PF_DXT1" or (formato_dds == "PF_AutoDXT" and bImageHasAlphaChannel):
+                    formato_ps4 = "Bc1Unorm"
+                elif formato_dds == "PF_DXT1":
+                    formato_ps4 = "Bc2Unorm"
+                elif formato_dds == "PF_DXT5" or formato_dds == "PF_DXT5n" or (formato_dds == "PF_AutoDXT" and bImageHasAlphaChannel):
+                    formato_ps4 = "Bc3Unorm"
+                elif formato_dds == "PF_BC5":
+                    formato_ps4 = "Bc5Unorm"
+                elif formato_dds == "PF_RGBA8":
+                    formato_ps4 = "R8G8B8A8Unorm"
+                elif formato_dds == "PF_B8G8R8A8":
+                    formato_ps4 = "B8G8R8A8Unorm"
+                elif formato_dds == "PF_G8":
+                    formato_ps4 = "R8Unorm"
+                elif formato_dds == "PF_VU8":
+                    formato_ps4 = "R8G8Unorm"
+                elif formato_dds == "PF_RGBA16F":
+                    formato_ps4 = "R16G16B16A16Float"
+                elif formato_dds == "PF_BC4":
+                    formato_ps4 = "Bc4Unorm"
+                elif formato_dds == "PF_BC6H":
+                    formato_ps4 = "Bc6Unorm"
+                elif formato_dds == "PF_BC7":
+                    formato_ps4 = "Bc7Unorm"
+                elif formato_dds == "PF_R8_UINT":
+                    formato_ps4 = "R8Uint"
+                    input(__l("WARNING: Please send me this file [PF_B8G8R8A8] - Press a key to continue . . .", 1))
+                    formato_ps4 = "skip"
+                else:
+                    __exit("ERROR: UNKNOWN FORMAT [" + formato_dds + "] - " + fichero_actual + ".uexp")
+                
+                if formato_ps4 != "skip":          
+                    orbis_cmd = [orbisimage_exe, "-m", str(num_mipmaps), "-f", formato_ps4, "-i", listado_ficheros[i]['path_pc'] + "\\" + listado_ficheros[i]['fichero'] + ".tga", "-o", listado_ficheros[i]['path_pc'] + "\\" + listado_ficheros[i]['fichero'] + ".dds_PS4"]
+                    sp = subprocess.run(orbis_cmd, capture_output=True, text=True)
+                    if sp.returncode != 0:
+                        print(sp.stdout)
+                        print(sp.stderr)
+                        __exit("ERROR CONVERTING DDS FILES- " + fichero_actual + ".uexp")
+
+
 
 
 def inject_dds():
