@@ -1,9 +1,9 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 #
-# PAK PC TO PS4 MOD Converter Tool 1.0.2 by drchannn
+# PAK PC TO PS4 MOD Converter Tool 1.0.3 by drchannn
 #
-##############################################
+####################################################
 
 import sys
 import os
@@ -62,9 +62,9 @@ def __load_ini():
 				if (linea[:len("PAK_COMPRESS=")]=="PAK_COMPRESS="): PAK_COMPRESS=int(linea[len("PAK_COMPRESS="):])
 				if (linea[:len("PROFILE=")]=="PROFILE="): PROFILE=linea[len("PROFILE="):]
 
-def __select_profile():	
+def __select_profile():
 	global GAMETAG,GAMEPATH,PROFILE
-	
+
 	if(PROFILE==""):
 		__l("SET PROFILE TO USE")
 		print ("")
@@ -72,17 +72,17 @@ def __select_profile():
 		spaces="                         "
 		with os.scandir(APP_PATH+"\\tools\\profiles") as ficheros:
 			for fichero in ficheros: profiles.append(fichero.name)
-		
+
 		for i, k in enumerate(profiles):
 			print (spaces+"["+str(i)+"] "+k)
 		print ("")
 		index_profile=input(spaces+"Select profile that u need use: ")
 
-		try:		
+		try:
 			PROFILE=profiles[int(index_profile)]
 		except:
 			__exit("ERROR: UNKNOW PROFILE")
-	
+
 	with open(APP_PATH+"\\tools\\profiles\\"+PROFILE, "r") as ini_file:
 		lineas=ini_file.read().split("\n")
 		GAMETAG=lineas[0]
@@ -98,7 +98,7 @@ def __save_default_profile(clear=0):
 		ini_file.write("PAUSE_FINISH="+str(PAUSE_FINISH)+"\n")
 		ini_file.write("PAK_COMPRESS="+str(PAK_COMPRESS)+"\n")
 		if (clear==0): ini_file.write("PROFILE="+str(PROFILE)+"\n")
-	
+
 def __get_ps4_pak_filename(pak_file):
 	pc_pak=pak_file
 	if(pc_pak.find(":")==-1): pc_pak=APP_PATH+"\\"+pc_pak
@@ -123,6 +123,26 @@ def __check_requisites():
 	(os.path.isfile(APP_PATH+"\\tools\\orbis-image2gnf\\libSceGpuAddress.dll")==False) or \
 	(os.path.isfile(APP_PATH+"\\tools\\orbis-image2gnf\\libSceGnm.dll")==False):
 		__exit("ERROR MISSING ORBIS-IMAGE2GNF")
+
+def __get_ps4_format(fichero_actual):
+	orbisimage_exe = "%s\\tools\\orbis-image2gnf\\orbis-image2gnf.exe" % (APP_PATH)
+	formato_dds=get_info_uexp(fichero_actual+".uexp")[1]
+
+	formato_ps4="UNKNOW"
+	if (formato_dds=="PF_DXT1"): formato_ps4 = "Bc1UNormSrgb" #creo q si no tiene canal alpha el formato seria Bc2UNormSrgb
+	elif (formato_dds=="PF_DXT5"): formato_ps4 = "Bc3UNormSrgb"
+	elif (formato_dds=="PF_BC5"): formato_ps4 = "Bc5UNorm"
+	elif (formato_dds=="PF_BC7"): formato_ps4 = "Bc7UNormSrgb"
+	elif (formato_dds=="PF_G8"): formato_ps4 = "Bc1UNormSrgb"
+
+	if (formato_ps4=="UNKNOW"):
+		if (os.path.isfile(fichero_actual+".dds")==True):
+			input(__l("WARNING: UNKNOW FORMAT (TRYING TO DETERMINATE FORMAT)["+formato_dds+"] - "+fichero_actual+".uexp",1))
+			orbis_cmd=[orbisimage_exe,"-f","auto","-i",fichero_actual+".dds","-o",fichero_actual+".dds_TMP"]
+			sp = subprocess.run(orbis_cmd, capture_output=True, text=True)
+			formato_ps4=sp.stdout.split("\n")[4].split(",")[3].strip()
+
+	return formato_ps4
 ############################
 
 
@@ -144,25 +164,33 @@ def extract_content_pak(pak_file):
 	umodel_exe = "%s\\tools\\umodel\\umodel.exe" % (APP_PATH)
 	umodel_extract_cmd=[umodel_exe,"-game="+GAMETAG,"-path="+TMP_PATH+"\\pak","-save","*"]
 	sp = subprocess.run(umodel_extract_cmd, capture_output=True, text=True, cwd=TMP_PATH+"\\pak")
-	if (os.path.isdir(TMP_PATH+"\\pak\\UmodelSaved")==False): 
+	if (os.path.isdir(TMP_PATH+"\\pak\\UmodelSaved")==False):
 		__save_default_profile(1)
 		__exit("ERROR: ON SAVE FILES FROM PAK")
+
 	shutil.copytree(TMP_PATH+"\\pak\\UmodelSaved", TMP_PATH+"\\ps4", dirs_exist_ok=True)
 	shutil.copytree(TMP_PATH+"\\pak\\UmodelSaved", TMP_PATH+"\\pc", dirs_exist_ok=True)
 	shutil.rmtree(TMP_PATH+"\\pak\\UmodelSaved")
 
-	umodel_export_cmd=[umodel_exe,"-game="+GAMETAG,"-path="+TMP_PATH+"\\pak","-notgacomp","-export","*"]
+	#umodel_export_cmd=[umodel_exe,"-game="+GAMETAG,"-path="+TMP_PATH+"\\pak","-notgacomp","-export","*"]
+	umodel_export_cmd=[umodel_exe,"-game="+GAMETAG,"-path="+TMP_PATH+"\\pak","-export","*"]
 	sp = subprocess.run(umodel_export_cmd, capture_output=True, text=True, cwd=TMP_PATH+"\\pak")
 	if (os.path.isdir(TMP_PATH+"\\pak\\UmodelExport")==False):
 		__save_default_profile(1)
 		__exit("ERROR: ON EXPORT TGA FROM PAK")
 	umodel_export_cmd=[umodel_exe,"-game="+GAMETAG,"-path="+TMP_PATH+"\\pak","-dds","-export","*"]
 	sp = subprocess.run(umodel_export_cmd, capture_output=True, text=True, cwd=TMP_PATH+"\\pak")
-	if (os.path.isdir(TMP_PATH+"\\pak\\UmodelExport")==False): 
+	if (os.path.isdir(TMP_PATH+"\\pak\\UmodelExport")==False):
 		__save_default_profile(1)
 		__exit("ERROR: ON EXPORT DDS FROM PAK")
+	umodel_export_cmd=[umodel_exe,"-game="+GAMETAG,"-path="+TMP_PATH+"\\pak","-png","-export","*"]
+	sp = subprocess.run(umodel_export_cmd, capture_output=True, text=True, cwd=TMP_PATH+"\\pak")
+	if (os.path.isdir(TMP_PATH+"\\pak\\UmodelExport")==False):
+		__save_default_profile(1)
+		__exit("ERROR: ON EXPORT PNG FROM PAK")
 	shutil.copytree(TMP_PATH+"\\pak\\UmodelExport", TMP_PATH+"\\pc", dirs_exist_ok=True)
 	shutil.rmtree(TMP_PATH+"\\pak")
+
 
 
 def get_files_to_process():
@@ -181,6 +209,7 @@ def get_files_to_process():
 				aux_obj["path_ps4"]=ps4_path
 				aux_obj["tga"]=0
 				aux_obj["dds"]=0
+				aux_obj["png"]=0
 				aux_obj["uasset"]=0
 				aux_obj["uexp"]=0
 				aux_obj["ubulk"]=0
@@ -189,6 +218,8 @@ def get_files_to_process():
 					aux_obj["tga"]=1
 				if (os.path.isfile(pc_path+"\\"+fichero_sin_ext+".dds")):
 					aux_obj["dds"]=1
+				if (os.path.isfile(pc_path+"\\"+fichero_sin_ext+".png")):
+					aux_obj["png"]=1
 				if (os.path.isfile(pc_path+"\\"+fichero_sin_ext+".uasset")):
 					aux_obj["uasset"]=1
 				if (os.path.isfile(pc_path+"\\"+fichero_sin_ext+".uexp")):
@@ -210,9 +241,8 @@ def get_info_uexp(fichero):
 			if (hex(contenido_binario[offset])=="0x50"):
 				if (hex(contenido_binario[offset+1])=="0x46" and hex(contenido_binario[offset+2])=="0x5f"):
 					offset_header = offset
-					
-					
-				'''	
+					break
+				'''
 					if (hex(contenido_binario[offset+3])=="0x44" and hex(contenido_binario[offset+4])=="0x58" and hex(contenido_binario[offset+5])=="0x54"):
 						formato_dds = chr(contenido_binario[offset+3])+chr(contenido_binario[offset+4])+chr(contenido_binario[offset+5])+chr(contenido_binario[offset+6])
 						formato_dds = formato_dds.upper()
@@ -228,9 +258,9 @@ def get_info_uexp(fichero):
 						offset_header = offset
 						checked=1
 						break
-				'''	
-	
-	
+				'''
+
+
 	if(offset_header>-1):
 		long_dds_formato=0
 		formato_dds=""
@@ -240,14 +270,13 @@ def get_info_uexp(fichero):
 			while contenido_binario != b'\x00':
 				formato_dds=formato_dds+chr(contenido_binario[0])
 				contenido_binario = ff.read(1)
-		formato_dds = formato_dds.upper()	
-		size_header = offset+len(formato_dds)+33
-	
+		formato_dds = formato_dds.upper()
+		size_header = offset_header+len(formato_dds)+33
+
 	with open(fichero, "rb") as ff:
 		ff.seek(offset_header+len(formato_dds)+5) #using pf_ or bc_
 		contenido_binario = ff.read(4)
 		num_mipmaps = int.from_bytes(contenido_binario, byteorder='little')
-	
 	return size_header,formato_dds,num_mipmaps,offset_header
 
 
@@ -259,39 +288,23 @@ def convert_dds():
 		print (f"\t\t\t  {i+1} - {len(listado_ficheros)}", end="\r")
 
 		if (listado_ficheros[i]['tga']==1):
-			
 			fichero_actual=listado_ficheros[i]['path_pc']+"\\"+listado_ficheros[i]['fichero']
 
-			# alguna vez los ficheros de imagen van en subcarpetas 
-			# cuando esto pasa esos ficheros no se procesan
-			if (os.path.isfile(fichero_actual+".uexp")==False): 
+			# alguna vez los ficheros de imagen van en subcarpetas cuando esto pasa esos ficheros no se procesan
+			if (os.path.isfile(fichero_actual+".uexp")==False):
 				input(__l("WARNING: MISSING UEXP FILE ["+listado_ficheros[i]['fichero']+"] - THIS FILE CAN BE CONVERTED - Press a key to continue . . .",1))
 			else:
-				size_header,formato_dds,num_mipmaps,offset_header=get_info_uexp(fichero_actual+".uexp")
-				if (formato_dds=="PF_DXT1"):
-					formato_ps4 = "Bc1UNormSrgb"
-				elif (formato_dds=="PF_DXT5"):
-					formato_ps4 = "Bc3UNormSrgb"
-				elif (formato_dds=="PF_BC5"):
-					formato_ps4 = "Bc5UNorm"
-				elif (formato_dds=="PF_BC7"):
-					formato_ps4 = "Bc7UNorm"
-				elif (formato_dds=="PF_B8G8R8A8"):
-					formato_ps4 = "B8G8R8X8UNormSrgb"
-					input(__l("WARNING: Please send me this file [PF_B8G8R8A8] - Press a key to continue . . .",1))
-					#print (fichero_actual)
-					#print (formato_dds)
-					formato_ps4 = "skip"
-				else:
-					__exit("ERROR: UNKNOW FORMAT ["+formato_dds+"] - "+fichero_actual+".uexp")
-			
-				if (formato_ps4!="skip"):			
-					orbis_cmd=[orbisimage_exe,"-m",str(num_mipmaps),"-f",formato_ps4,"-i",listado_ficheros[i]['path_pc']+"\\"+listado_ficheros[i]['fichero']+".tga","-o",listado_ficheros[i]['path_pc']+"\\"+listado_ficheros[i]['fichero']+".dds_PS4"]
-					sp = subprocess.run(orbis_cmd, capture_output=True, text=True)
-					if (sp.returncode!=0):
-						print (sp.stdout)
-						print (sp.stderr)
-						__exit("ERROR CONVERTING DDS FILES- "+fichero_actual+".uexp")
+				formato_ps4 = __get_ps4_format(fichero_actual)
+				num_mipmaps=get_info_uexp(fichero_actual+".uexp")[2]
+				if (formato_ps4!="unknow"):
+					if (os.path.isfile(fichero_actual+".dds")==True):
+						orbis_cmd=[orbisimage_exe,"-m",str(num_mipmaps),"-f",formato_ps4,"-i",listado_ficheros[i]['path_pc']+"\\"+listado_ficheros[i]['fichero']+".dds","-o",listado_ficheros[i]['path_pc']+"\\"+listado_ficheros[i]['fichero']+".dds_PS4"]
+						sp = subprocess.run(orbis_cmd, capture_output=True, text=True)
+
+						if (sp.returncode!=0):
+							print (sp.stdout)
+							print (sp.stderr)
+							__exit("ERROR CONVERTING DDS FILES- "+fichero_actual+".uexp")
 
 
 def inject_dds():
@@ -299,7 +312,7 @@ def inject_dds():
 	for i, k in enumerate(listado_ficheros):
 		print (f"\t\t\t  {i+1} - {len(listado_ficheros)}", end="\r")
 		fichero_actual=listado_ficheros[i]['path_pc']+"\\"+listado_ficheros[i]['fichero']
-		
+
 		if (os.path.isfile(fichero_actual+".dds_PS4")==True):
 
 			if (os.path.isfile(fichero_actual+".ubulk")==True):
@@ -352,7 +365,6 @@ def patch_offsets():
 						ff.write(new_value.to_bytes(4, byteorder='little'))
 
 				if (os.path.isfile(fichero_actual+".uexp_PS4")==True):
-
 					size_header,formato_dds,num_mipmaps,offset_header=get_info_uexp(fichero_actual+".uexp")
 
 					with open(fichero_actual+".uexp_PS4", 'r+b') as ff:
@@ -416,7 +428,7 @@ if __name__ == '__main__':
 
 		if(os.path.isfile(sys.argv[1])==False): __exit("ERROR OPPENING PAK FILE")
 		ps4_pak_filename=__get_ps4_pak_filename(sys.argv[1])
-		
+
 		if (os.path.isdir(APP_PATH+"\\tools")==False): os.makedirs(APP_PATH+"\\tools", exist_ok=True)
 		if (os.path.isdir(APP_PATH+"\\tools\\profiles")==False): os.makedirs(APP_PATH+"\\tools\\profiles", exist_ok=True)
 		if (os.path.isdir(APP_PATH+"\\tools\\unrealpak")==False): os.makedirs(APP_PATH+"\\tools\\unrealpak", exist_ok=True)
@@ -424,12 +436,12 @@ if __name__ == '__main__':
 		if (os.path.isdir(APP_PATH+"\\tools\\orbis-image2gnf")==False): os.makedirs(APP_PATH+"\\tools\\orbis-image2gnf", exist_ok=True)
 
 		__load_ini()
-		
+
 		if(CHECK_REQUISITES==1): __check_requisites()
-		
+
 		__select_profile()
 		if(AUTO_SET_PROFILE==1): __save_default_profile()
-			
+
 		cleaning_paths()
 		if(PAUSE_STEP==1): input(__l("PAUSE - Press a key to continue . . .",1))
 
@@ -456,7 +468,7 @@ if __name__ == '__main__':
 		if(PAUSE_STEP==1): input(__l("PAUSE - Press a key to continue . . .",1))
 
 		__l("CLEANING TRASH")
-		if (os.path.isdir(APP_PATH+"\\tmp")==True): shutil.rmtree(APP_PATH+"\\tmp")
+		#if (os.path.isdir(APP_PATH+"\\tmp")==True): shutil.rmtree(APP_PATH+"\\tmp")
 
 		if(PAUSE_FINISH==1): input(__l("FINISH PAK PC TO PS4 MOD CONVERTER] - Press a key to continue . . .",1))
 	else:
