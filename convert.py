@@ -296,7 +296,7 @@ def convert_dds():
 			else:
 				formato_ps4 = __get_ps4_format(fichero_actual)
 				num_mipmaps=get_info_uexp(fichero_actual+".uexp")[2]
-				if (formato_ps4!="unknow"):
+				if (formato_ps4!="UNKNOW"):
 					if (os.path.isfile(fichero_actual+".dds")==True):
 						orbis_cmd=[orbisimage_exe,"-m",str(num_mipmaps),"-f",formato_ps4,"-i",listado_ficheros[i]['path_pc']+"\\"+listado_ficheros[i]['fichero']+".dds","-o",listado_ficheros[i]['path_pc']+"\\"+listado_ficheros[i]['fichero']+".dds_PS4"]
 						sp = subprocess.run(orbis_cmd, capture_output=True, text=True)
